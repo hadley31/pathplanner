@@ -6,6 +6,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pathplanner/widgets/dialogs/edit_field_dialog.dart';
+import 'package:pathplanner/widgets/settings_text_field.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../field_image.dart';
@@ -81,10 +82,10 @@ class _SettingsDialogState extends State<SettingsDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildTextField(
-                  context,
-                  'Width',
-                  (value) {
+                SettingsTextField(
+                  label: 'Width',
+                  defaultValue: _width.toStringAsFixed(2),
+                  onSubmitted: (value) {
                     double? val = double.tryParse(value);
                     if (val != null) {
                       widget.prefs.setDouble('robotWidth', val);
@@ -94,13 +95,12 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     }
                     widget.onSettingsChanged();
                   },
-                  _width.toStringAsFixed(2),
-                  FilteringTextInputFormatter.allow(RegExp(r'(^\d*\.?\d*)')),
+                  formatter: _decimalTextFormatter(decimalPlaces: 2),
                 ),
-                _buildTextField(
-                  context,
-                  'Length',
-                  (value) {
+                SettingsTextField(
+                  label: 'Length',
+                  defaultValue: _length.toStringAsFixed(2),
+                  onSubmitted: (value) {
                     double? val = double.tryParse(value);
                     if (val != null) {
                       widget.prefs.setDouble('robotLength', val);
@@ -110,8 +110,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     }
                     widget.onSettingsChanged();
                   },
-                  _length.toStringAsFixed(2),
-                  FilteringTextInputFormatter.allow(RegExp(r'(^\d*\.?\d*)')),
+                  formatter: _decimalTextFormatter(decimalPlaces: 2),
                 ),
               ],
             ),
@@ -135,23 +134,21 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildTextField(
-                        context,
-                        'Host',
-                        (value) {
+                      SettingsTextField(
+                        label: 'Host',
+                        defaultValue: _pplibClientHost,
+                        onSubmitted: (value) {
                           widget.prefs.setString('pplibClientHost', value);
                           setState(() {
                             _pplibClientHost = value;
                           });
                           widget.onSettingsChanged();
                         },
-                        _pplibClientHost,
-                        null,
                       ),
-                      _buildTextField(
-                        context,
-                        'Port',
-                        (value) {
+                      SettingsTextField(
+                        label: 'Port',
+                        defaultValue: _pplibClientPort.toString(),
+                        onSubmitted: (value) {
                           int? val = int.tryParse(value);
                           if (val != null) {
                             widget.prefs.setInt('pplibClientPort', val);
@@ -161,8 +158,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           }
                           widget.onSettingsChanged();
                         },
-                        _pplibClientPort.toString(),
-                        FilteringTextInputFormatter.allow(RegExp(r'(^\d*)')),
+                        formatter: FilteringTextInputFormatter.allow(
+                            RegExp(r'(^\d*)')),
                       ),
                     ],
                   ),
@@ -339,41 +336,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
     );
   }
 
-  Widget _buildTextField(
-      BuildContext context,
-      String label,
-      ValueChanged<String>? onSubmitted,
-      String text,
-      TextInputFormatter? formatter) {
-    ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: SizedBox(
-        height: 40,
-        width: 165,
-        child: TextField(
-          onSubmitted: (val) {
-            if (onSubmitted != null && val.isNotEmpty) {
-              onSubmitted.call(val);
-            }
-            _unfocus(context);
-          },
-          controller: TextEditingController(text: text)
-            ..selection =
-                TextSelection.fromPosition(TextPosition(offset: text.length)),
-          inputFormatters: [
-            if (formatter != null) formatter,
-          ],
-          style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
-          decoration: InputDecoration(
-            contentPadding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-            labelText: label,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
-          ),
-        ),
-      ),
-    );
+  TextInputFormatter _decimalTextFormatter({int decimalPlaces = 2}) {
+    return FilteringTextInputFormatter.allow(
+        RegExp('(^\\d+(?:\\.\\d{0,$decimalPlaces})?)'));
   }
 
   Widget _buildFieldImageDropdown(BuildContext context) {
@@ -574,13 +539,6 @@ class _SettingsDialogState extends State<SettingsDialog> {
         ),
       ],
     );
-  }
-
-  void _unfocus(BuildContext context) {
-    FocusScopeNode currentScope = FocusScope.of(context);
-    if (!currentScope.hasPrimaryFocus && currentScope.hasFocus) {
-      FocusManager.instance.primaryFocus!.unfocus();
-    }
   }
 
   void _showFieldImportDialog(BuildContext context) {
